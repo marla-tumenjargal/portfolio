@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion"
 import Link from 'next/link';
 import './globals.css';
+import header from './header.png'
 
 interface TypewriterTextProps {
   text: string;
@@ -480,12 +481,92 @@ const ProjectGrid = ({ showGallery }: { showGallery: boolean }) => {
   );
 };
 
+// Article Popup Component
+const ArticlePopup = ({ article, isVisible, onClose }) => {
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isVisible) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isVisible, onClose]);
+
+  if (!article) return null;
+
+  return (
+    <div 
+      className={`article-popup-overlay ${isVisible ? 'visible' : ''}`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="article-popup">
+        <button className="article-popup-close" onClick={onClose}>
+          ×
+        </button>
+        <div className="article-popup-content">
+          <h1 className="article-popup-title">
+            {article.fullTitle || article.title}
+          </h1>
+          
+          <hr className="article-section-divider" />
+          
+          <div className="article-section">
+            <h2 className="article-section-title">OUR GOAL</h2>
+            <p className="article-section-content">
+              Our goal is to build superintelligent autonomous systems. We believe that solving 
+              autonomous coding is the root node problem that will enable superintelligence 
+              more broadly. If you build a superintelligent autonomous coding system, all other 
+              verticals of computer-based work will follow.
+            </p>
+          </div>
+
+          <hr className="article-section-divider" />
+
+          <div className="article-section">
+            <h2 className="article-section-title">RESEARCH</h2>
+            <p className="article-section-content">
+              Our research sits at the intersection of reinforcement learning and language 
+              models. Over the last decade, our team built some of the most capable AI systems, 
+              such as AlphaGo and Gemini, in both fields. Our research bet for building 
+              superintelligence is to improve the autonomous capabilities of language models 
+              with reinforcement learning. One way to think of our research agenda is by asking 
+              the question – how do we get a language model to exhibit the same level of 
+              autonomy on a computer as AlphaGo did at Go?
+            </p>
+          </div>
+
+          <hr className="article-section-divider" />
+
+          <div className="article-section">
+            <h2 className="article-section-title">POSTS</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [showPortfolio, setShowPortfolio] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [showHeader, setShowHeader] = useState(false);
   const [showSections, setShowSections] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [showArticlePopup, setShowArticlePopup] = useState(false);
 
   const handleLoadingComplete = () => {
     setShowPortfolio(true);
@@ -505,6 +586,16 @@ export default function Home() {
     }, 800);
   };
 
+  const handleArticleClick = (article) => {
+    setSelectedArticle(article);
+    setShowArticlePopup(true);
+  };
+
+  const handleCloseArticle = () => {
+    setShowArticlePopup(false);
+    setTimeout(() => setSelectedArticle(null), 300);
+  };
+
   // Show loading animation first
   if (!showPortfolio) {
     return <LoadingAnimation onComplete={handleLoadingComplete} />;
@@ -514,7 +605,7 @@ export default function Home() {
     <div className="main-container">
       <Header isVisible={showHeader} />
       
-      {/* Hero Section - Full Page Gallery */}
+      {/* Hero Section - Header Image Only */}
       <section className="hero-section">
         {/* Name in Top Left */}
         <div className="hero-name">
@@ -527,7 +618,7 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* Description positioned above gallery */}
+        {/* Description positioned above image */}
         <div className="hero-description">
           <div className={`description-content ${showDescription ? 'visible' : 'hidden'}`}>
             <p className="description-text">
@@ -541,10 +632,21 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Full Page Gallery */}
-        <div className="hero-gallery">
-          <ProjectGrid showGallery={showGallery} />
+        {/* Header Image Section - Main focal point */}
+        <div className={`header-image-section ${showGallery ? 'visible' : 'hidden'}`}>
+          <div className="header-image-container">
+            <img 
+              src={header.src} 
+              alt="Header" 
+              className="header-image"
+            />
+          </div>
         </div>
+      </section>
+
+      {/* Projects Section - Separate scrollable section */}
+      <section className="projects-section">
+        <ProjectGrid showGallery={showGallery} />
       </section>
 
       {/* Main Content */}
@@ -640,11 +742,26 @@ export default function Home() {
             </div>
             <div className="writing-list">
               {[
-                { title: "issue 01: eternal sunshine", date: "june 1st, 2025", excerpt: "raise y_our glasses (one last time!)" },
-                { title: "Design Systems at Scale", date: "May 2025", excerpt: "Building consistent, maintainable design languages for growing organizations." },
-                { title: "Creative Coding Explorations", date: "April 2025", excerpt: "Where art meets code, and how creative programming opens new possibilities." }
+                { 
+                  title: "issue 01: eternal sunshine", 
+                  fullTitle: "Building superintelligent autonomous systems",
+                  date: "june 1st, 2025", 
+                  excerpt: "raise y_our glasses (one last time!)" 
+                },
+                { 
+                  title: "Design Systems at Scale", 
+                  fullTitle: "Building superintelligent autonomous systems",
+                  date: "May 2025", 
+                  excerpt: "Building consistent, maintainable design languages for growing organizations." 
+                },
+                { 
+                  title: "Creative Coding Explorations", 
+                  fullTitle: "Building superintelligent autonomous systems",
+                  date: "April 2025", 
+                  excerpt: "Where art meets code, and how creative programming opens new possibilities." 
+                }
               ].map((post) => (
-                <article key={post.title} className="article-card">
+                <article key={post.title} className="article-card" onClick={() => handleArticleClick(post)}>
                   <div className="article-content">
                     <div className="article-text">
                       <h3 className="article-title">
@@ -669,6 +786,13 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* Article Popup */}
+      <ArticlePopup 
+        article={selectedArticle}
+        isVisible={showArticlePopup}
+        onClose={handleCloseArticle}
+      />
     </div>
   );
 }
