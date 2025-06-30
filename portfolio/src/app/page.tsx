@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion"
+import Link from 'next/link';
+import './globals.css';
 
 interface TypewriterTextProps {
   text: string;
@@ -11,6 +13,15 @@ interface TypewriterTextProps {
 
 interface HeaderProps {
   isVisible: boolean;
+}
+
+interface ProjectCardProps {
+  title: string;
+  isNew?: boolean;
+  backgroundColor: string;
+  hoverColor: string;
+  href: string;
+  className?: string;
 }
 
 // Loading Animation Component
@@ -159,8 +170,8 @@ const LoadingAnimation = ({ onComplete }: { onComplete: () => void }) => {
   // Don't render anything if animation hasn't started
   if (!isPlaying) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 overflow-hidden">
-        <div className="relative w-96 h-96 flex items-center justify-center"></div>
+      <div className="loading-container">
+        <div className="loading-content"></div>
       </div>
     )
   }
@@ -172,11 +183,11 @@ const LoadingAnimation = ({ onComplete }: { onComplete: () => void }) => {
   const orbitDotSize = getOrbitDotSize(animationProgress)
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 overflow-hidden">
-      <div className="relative w-96 h-96 flex items-center justify-center">
+    <div className="loading-container">
+      <div className="loading-content">
         {/* Perfectly symmetrical animation container */}
         <motion.div
-          className="absolute"
+          className="animation-container"
           style={{
             rotate: currentRotation,
             x: cornerPosition.x,
@@ -189,9 +200,8 @@ const LoadingAnimation = ({ onComplete }: { onComplete: () => void }) => {
               {[...Array(7)].map((_, layerIndex) => (
                 <motion.div
                   key={`main-layer-${layerIndex}`}
-                  className="absolute rounded-full"
+                  className="center-dot"
                   style={{
-                    backgroundColor: "#1626ff",
                     opacity: 0.1 + layerIndex * 0.13,
                     width: mainDotSize + layerIndex * (mainDotSize * 0.3),
                     height: mainDotSize + layerIndex * (mainDotSize * 0.3),
@@ -224,9 +234,8 @@ const LoadingAnimation = ({ onComplete }: { onComplete: () => void }) => {
                   {[...Array(6)].map((_, layerIndex) => (
                     <motion.div
                       key={`orbit-layer-${dot.id}-${layerIndex}`}
-                      className="absolute rounded-full"
+                      className="orbit-dot"
                       style={{
-                        backgroundColor: "#1626ff",
                         opacity: 0.12 + layerIndex * 0.15,
                         width: orbitDotSize + layerIndex * 6,
                         height: orbitDotSize + layerIndex * 6,
@@ -253,7 +262,7 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({ text, delay = 0, onComp
       const timeout = setTimeout(() => {
         setDisplayedText(prev => prev + text[currentIndex]);
         setCurrentIndex(prev => prev + 1);
-      }, delay + (currentIndex === 0 ? 200 : 120));
+      }, delay + (currentIndex === 0 ? 100 : 50));
 
       return () => clearTimeout(timeout);
     } else if (onComplete && currentIndex === text.length) {
@@ -262,9 +271,9 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({ text, delay = 0, onComp
   }, [currentIndex, text, delay, onComplete]);
 
   return (
-    <span className="relative">
+    <span className="typewriter-container">
       {displayedText}
-      <span className="animate-pulse">|</span>
+      <span className="typewriter-cursor">|</span>
     </span>
   );
 };
@@ -272,7 +281,6 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({ text, delay = 0, onComp
 const Header = ({ isVisible }: HeaderProps) => {
   const navItems = [
     { name: "Ventures", href: "#ventures" },
-    { name: "Tech Stack", href: "#tech-stack" },
     { name: "Connect", href: "#connect" },
     { name: "Playground", href: "#playground" },
     { name: "Writing", href: "#writing" },
@@ -286,34 +294,30 @@ const Header = ({ isVisible }: HeaderProps) => {
   };
 
   return (
-    <header 
-      className={`w-full bg-white border-b border-gray-100 sticky top-0 z-50 transition-all duration-700 ${
-        isVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-4'
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-              <span className="text-white font-medium text-sm">M</span>
+    <header className={`header ${isVisible ? 'visible' : 'hidden'}`}>
+      <div className="header-container">
+        <div className="header-content">
+          <div className="header-logo">
+            <div className="logo-circle">
+              <span className="logo-text">M</span>
             </div>
           </div>
 
-          <nav className="hidden md:flex space-x-12">
+          <nav className="nav-desktop">
             {navItems.map((item) => (
               <button
                 key={item.name}
                 onClick={() => handleNavClick(item.href)}
-                className="text-gray-600 hover:text-black text-sm font-medium transition-colors duration-200 tracking-wide"
+                className="nav-button"
               >
                 {item.name}
               </button>
             ))}
           </nav>
 
-          <div className="md:hidden">
-            <button className="text-gray-600 hover:text-black">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="mobile-menu-button">
+            <button>
+              <svg className="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6"></line>
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -326,11 +330,162 @@ const Header = ({ isVisible }: HeaderProps) => {
   );
 };
 
+const ProjectCard: React.FC<ProjectCardProps> = ({ 
+  title, 
+  isNew, 
+  backgroundColor, 
+  hoverColor, 
+  href, 
+  className = '' 
+}) => {
+  const handleMouseEnter = (e) => {
+    e.currentTarget.style.outline = `3px solid ${hoverColor}`;
+  };
+
+  const handleMouseLeave = (e) => {
+    e.currentTarget.style.outline = 'none';
+  };
+
+  return (
+    <Link href={href}>
+      <div 
+        className={`project-card ${className}`}
+        style={{ backgroundColor }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className="project-card-content">
+          <div className="project-card-inner">
+            <h3 className="project-title">{title}</h3>
+            {isNew && (
+              <span className="new-badge">
+                NEW
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+// Project Grid Gallery Component
+const ProjectGrid = ({ showGallery }: { showGallery: boolean }) => {
+  const projects = [
+    {
+      title: "AI Meeting Notes",
+      subtitle: "Perfect notes every time",
+      isNew: true,
+      backgroundColor: "#FFB5B5", // salmon
+      hoverColor: "#FF8A8A",
+      href: "/ai-meeting-notes"
+    },
+    {
+      title: "Enterprise Search",
+      subtitle: "One search for everything", 
+      isNew: true,
+      backgroundColor: "#B5D4FF", // baby blue
+      hoverColor: "#8AC4FF",
+      href: "/enterprise-search"
+    },
+    {
+      title: "Projects",
+      subtitle: "Keep every plan on track",
+      isNew: false,
+      backgroundColor: "#FFF4B5", // baby yellow
+      hoverColor: "#FFEB8A",
+      href: "/projects"
+    },
+    {
+      title: "Notion Mail",
+      subtitle: "The inbox that thinks like you",
+      isNew: true,
+      backgroundColor: "#E0E0E0", // baby gray
+      hoverColor: "#D0D0D0",
+      href: "/notion-mail"
+    },
+    {
+      title: "Business-in-a-box",
+      subtitle: "Run your entire company",
+      isNew: false,
+      backgroundColor: "#B5FFB5", // baby green
+      hoverColor: "#8AFF8A",
+      href: "/business-in-a-box"
+    }
+  ];
+
+  return (
+    <div className={`project-grid ${showGallery ? 'visible' : 'hidden'}`}>
+      <div className="project-grid-header">
+        <h2 className="grid-title">
+          Featured Projects
+        </h2>
+        <p className="grid-description">
+          A collection of applications I've built, from productivity tools to creative experiments
+        </p>
+      </div>
+
+      <div className="grid-container">
+        <div className="grid-layout">
+          {/* Row 1: Projects 1 & 2 */}
+          <ProjectCard
+            title={`${projects[0].title} - ${projects[0].subtitle}`}
+            isNew={projects[0].isNew}
+            backgroundColor={projects[0].backgroundColor}
+            hoverColor={projects[0].hoverColor}
+            href={projects[0].href}
+            className="grid-item"
+          />
+          
+          <ProjectCard
+            title={`${projects[1].title} - ${projects[1].subtitle}`}
+            isNew={projects[1].isNew}
+            backgroundColor={projects[1].backgroundColor}
+            hoverColor={projects[1].hoverColor}
+            href={projects[1].href}
+            className="grid-item"
+          />
+
+          {/* Row 2: Project 3 (long panel) */}
+          <ProjectCard
+            title={`${projects[2].title} - ${projects[2].subtitle}`}
+            isNew={projects[2].isNew}
+            backgroundColor={projects[2].backgroundColor}
+            hoverColor={projects[2].hoverColor}
+            href={projects[2].href}
+            className="grid-item grid-item-wide"
+          />
+
+          {/* Row 3: Projects 4 & 5 */}
+          <ProjectCard
+            title={`${projects[3].title} - ${projects[3].subtitle}`}
+            isNew={projects[3].isNew}
+            backgroundColor={projects[3].backgroundColor}
+            hoverColor={projects[3].hoverColor}
+            href={projects[3].href}
+            className="grid-item"
+          />
+
+          <ProjectCard
+            title={`${projects[4].title} - ${projects[4].subtitle}`}
+            isNew={projects[4].isNew}
+            backgroundColor={projects[4].backgroundColor}
+            hoverColor={projects[4].hoverColor}
+            href={projects[4].href}
+            className="grid-item"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [showPortfolio, setShowPortfolio] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [showHeader, setShowHeader] = useState(false);
   const [showSections, setShowSections] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
 
   const handleLoadingComplete = () => {
     setShowPortfolio(true);
@@ -343,12 +498,11 @@ export default function Home() {
   const handleDescriptionComplete = () => {
     setTimeout(() => {
       setShowHeader(true);
-      setTimeout(() => setShowSections(true), 300);
+      setTimeout(() => {
+        setShowSections(true);
+        setTimeout(() => setShowGallery(true), 500);
+      }, 300);
     }, 800);
-  };
-
-  const handleExploreClick = () => {
-    console.log('Navigate to explore page');
   };
 
   // Show loading animation first
@@ -357,120 +511,66 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="main-container">
       <Header isVisible={showHeader} />
       
-      {/* Hero Section */}
-      <section className="relative min-h-screen bg-white">
+      {/* Hero Section - Full Page Gallery */}
+      <section className="hero-section">
         {/* Name in Top Left */}
-        <div className="absolute top-6 left-6 text-left z-20">
-          <h1 className="text-xl md:text-2xl font-large text-black tracking-tight">
+        <div className="hero-name">
+          <h1 className="hero-title">
             <TypewriterText 
-              text="Marla Tumenjargal" 
+              text="Hi I'm John Doe -- I'm a Product Designer at Webflow." 
               delay={0}
               onComplete={handleNameComplete}
             />
           </h1>
         </div>
 
-        {/* Description + Explore Button */}
-        <div className="flex items-left justify-start h-full px-6 pb-24">
-          <div className="text-left max-w-xl mt-16">
-            <div 
-              className={`transition-all duration-1000 ${
-                showDescription ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-            >
-              <p className="text-xl md:text text-gray-600 font-light leading-relaxed tracking-wide mb-8">
-                <TypewriterText 
-                  text="Designer, Developer & Creative Technologist"
-                  delay={showDescription ? 0 : 50}
-                  onComplete={handleDescriptionComplete}
-                />
-              </p>
-            </div>
-
-            {/* Explore Button */}
-            <div 
-              className={`transition-all duration-1000 delay-500 ${
-                showSections ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-            >
-              <button 
-                onClick={handleExploreClick}
-                className="w-16 h-16 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 flex items-center justify-center group"
-              >
-                <svg 
-                  className="w-6 h-6 transform group-hover:translate-x-1 transition-transform duration-300" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </button>
-            </div>
+        {/* Description positioned above gallery */}
+        <div className="hero-description">
+          <div className={`description-content ${showDescription ? 'visible' : 'hidden'}`}>
+            <p className="description-text">
+              <TypewriterText 
+                text="I am a seasoned product designer with 5 years of experience specializing 
+                in crafting creative tools solutions and empowering creatives."
+                delay={showDescription ? 0 : 5}
+                onComplete={handleDescriptionComplete}
+              />
+            </p>
           </div>
+        </div>
+
+        {/* Full Page Gallery */}
+        <div className="hero-gallery">
+          <ProjectGrid showGallery={showGallery} />
         </div>
       </section>
 
       {/* Main Content */}
-      <main 
-        className={`transition-all duration-1000 ${
-          showSections ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
+      <main className={`main-content ${showSections ? 'visible' : 'hidden'}`}>
         {/* Ventures Section */}
-        <section id="ventures" className="py-24 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-black mb-6 tracking-tight">
+        <section id="ventures" className="section">
+          <div className="section-container">
+            <div className="section-header">
+              <h2 className="section-title">
                 Ventures
               </h2>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              <p className="section-description-large">
                 Exploring innovative projects that shape the future through technology, 
                 design, and creative problem-solving.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid-3">
               {[
-                { name: 'Startup Initiative', color: 'bg-gradient-to-br from-purple-500 to-pink-500' },
-                { name: 'Tech Innovation', color: 'bg-gradient-to-br from-blue-500 to-cyan-500' },
-                { name: 'Creative Project', color: 'bg-gradient-to-br from-green-500 to-teal-500' }
+                { name: 'Startup Initiative', color: 'bg-gradient-purple-pink' },
+                { name: 'Tech Innovation', color: 'bg-gradient-blue-cyan' },
+                { name: 'Creative Project', color: 'bg-gradient-green-teal' }
               ].map((venture) => (
-                <div key={venture.name} className="group cursor-pointer">
-                  <div className={`aspect-square ${venture.color} rounded-lg mb-4 transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl`}></div>
-                  <h3 className="text-xl font-semibold text-black mb-2">{venture.name}</h3>
-                  <p className="text-gray-600">Brief description of this venture and its impact.</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Tech Stack Section */}
-        <section id="tech-stack" className="py-24 px-6 bg-gray-50">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-black mb-6 tracking-tight">
-                Tech Stack
-              </h2>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                The tools and technologies that power modern innovation.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-              {[
-                { name: 'React', color: 'bg-blue-500' },
-                { name: 'Next.js', color: 'bg-black' },
-                { name: 'TypeScript', color: 'bg-blue-600' },
-                { name: 'Node.js', color: 'bg-green-600' },
-                { name: 'Python', color: 'bg-yellow-500' },
-                { name: 'Figma', color: 'bg-purple-500' }
-              ].map((tech) => (
-                <div key={tech.name} className="text-center p-6 bg-white rounded-lg hover:shadow-lg transition-shadow duration-300">
-                  <div className={`w-12 h-12 ${tech.color} rounded-full mx-auto mb-4`}></div>
-                  <h3 className="font-medium text-black">{tech.name}</h3>
+                <div key={venture.name} className="venture-card">
+                  <div className={`venture-card-image ${venture.color}`}></div>
+                  <h3 className="venture-card-title">{venture.name}</h3>
+                  <p className="venture-card-description">Brief description of this venture and its impact.</p>
                 </div>
               ))}
             </div>
@@ -478,18 +578,20 @@ export default function Home() {
         </section>
 
         {/* Connect Section */}
-        <section id="connect" className="py-24 px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold text-black mb-6 tracking-tight">
-              Connect
-            </h2>
-            <p className="text-lg text-gray-600 mb-12 leading-relaxed">
-              Let's collaborate on something extraordinary. Reach out for projects, 
-              opportunities, or just to share ideas.
-            </p>
-            <div className="flex justify-center space-x-8">
+        <section id="connect" className="section">
+          <div className="section-container-medium">
+            <div className="section-header">
+              <h2 className="section-title">
+                Connect
+              </h2>
+              <p className="section-description-medium">
+                Let's collaborate on something extraordinary. Reach out for projects, 
+                opportunities, or just to share ideas.
+              </p>
+            </div>
+            <div className="connect-buttons">
               {['Email', 'LinkedIn', 'Twitter', 'GitHub'].map((platform) => (
-                <button key={platform} className="text-gray-600 hover:text-black transition-colors duration-200 font-medium">
+                <button key={platform} className="connect-button">
                   {platform}
                 </button>
               ))}
@@ -498,27 +600,27 @@ export default function Home() {
         </section>
 
         {/* Playground Section */}
-        <section id="playground" className="py-24 px-6 bg-gray-50">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-black mb-6 tracking-tight">
+        <section id="playground" className="section section-gray">
+          <div className="section-container">
+            <div className="section-header">
+              <h2 className="section-title">
                 Playground
               </h2>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              <p className="section-description-large">
                 Interactive experiments and creative explorations where ideas come to life.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid-2">
               {[
-                { name: 'Interactive Demo', color: 'bg-gradient-to-br from-orange-400 to-red-500' },
-                { name: 'Creative Experiment', color: 'bg-gradient-to-br from-indigo-500 to-purple-600' },
-                { name: 'Code Playground', color: 'bg-gradient-to-br from-teal-400 to-blue-500' },
-                { name: 'Design System', color: 'bg-gradient-to-br from-pink-500 to-rose-500' }
+                { name: 'Interactive Demo', color: 'bg-gradient-orange-red' },
+                { name: 'Creative Experiment', color: 'bg-gradient-indigo-purple' },
+                { name: 'Code Playground', color: 'bg-gradient-teal-blue' },
+                { name: 'Design System', color: 'bg-gradient-pink-rose' }
               ].map((item) => (
-                <div key={item.name} className="group cursor-pointer p-8 bg-white rounded-lg hover:shadow-lg transition-all duration-300">
-                  <div className={`aspect-video ${item.color} rounded mb-6 group-hover:scale-105 transition-transform duration-300`}></div>
-                  <h3 className="text-xl font-semibold text-black mb-2">{item.name}</h3>
-                  <p className="text-gray-600">Explore this interactive element and discover what's possible.</p>
+                <div key={item.name} className="playground-card">
+                  <div className={`playground-card-image ${item.color}`}></div>
+                  <h3 className="playground-card-title">{item.name}</h3>
+                  <p className="playground-card-description">Explore this interactive element and discover what's possible.</p>
                 </div>
               ))}
             </div>
@@ -526,30 +628,30 @@ export default function Home() {
         </section>
 
         {/* Writing Section */}
-        <section id="writing" className="py-24 px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-black mb-6 tracking-tight">
+        <section id="writing" className="section">
+          <div className="section-container-medium">
+            <div className="section-header">
+              <h2 className="section-title">
                 Writing
               </h2>
-              <p className="text-lg text-gray-600 leading-relaxed">
-                Thoughts and insights on technology, design, and the future of digital experiences.
+              <p className="section-description">
+                some thoughtpieces on philosophy, poetry, and human-centered technology. 
               </p>
             </div>
-            <div className="space-y-12">
+            <div className="writing-list">
               {[
-                { title: "The Future of Web Development", date: "June 2025", excerpt: "Exploring emerging trends and technologies that are reshaping how we build for the web." },
+                { title: "issue 01: eternal sunshine", date: "june 1st, 2025", excerpt: "raise y_our glasses (one last time!)" },
                 { title: "Design Systems at Scale", date: "May 2025", excerpt: "Building consistent, maintainable design languages for growing organizations." },
                 { title: "Creative Coding Explorations", date: "April 2025", excerpt: "Where art meets code, and how creative programming opens new possibilities." }
               ].map((post) => (
-                <article key={post.title} className="group cursor-pointer">
-                  <div className="flex flex-col md:flex-row md:items-center gap-6 p-8 rounded-lg hover:bg-gray-50 transition-colors duration-300">
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-semibold text-black mb-2 group-hover:text-gray-600 transition-colors">
+                <article key={post.title} className="article-card">
+                  <div className="article-content">
+                    <div className="article-text">
+                      <h3 className="article-title">
                         {post.title}
                       </h3>
-                      <p className="text-gray-600 mb-3">{post.excerpt}</p>
-                      <p className="text-sm text-gray-400">{post.date}</p>
+                      <p className="article-excerpt">{post.excerpt}</p>
+                      <p className="article-date">{post.date}</p>
                     </div>
                   </div>
                 </article>
@@ -560,13 +662,9 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer 
-        className={`py-12 px-6 border-t border-gray-100 transition-all duration-1000 ${
-          showSections ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-gray-500">
+      <footer className={`footer ${showSections ? 'visible' : 'hidden'}`}>
+        <div className="footer-container">
+          <p className="footer-text">
             © 2025 Marla Tumenjargal. Crafted with intention.
           </p>
         </div>
