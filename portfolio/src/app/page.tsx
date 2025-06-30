@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { motion } from "framer-motion"
 
 interface TypewriterTextProps {
   text: string;
@@ -10,6 +11,237 @@ interface TypewriterTextProps {
 
 interface HeaderProps {
   isVisible: boolean;
+}
+
+// Loading Animation Component
+const LoadingAnimation = ({ onComplete }: { onComplete: () => void }) => {
+  const [animationProgress, setAnimationProgress] = useState(0)
+  const [isComplete, setIsComplete] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+
+  // Track mouse position for dynamic interaction
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [])
+
+  // Start animation after a brief delay to show blank screen
+  useEffect(() => {
+    const startTimer = setTimeout(() => {
+      setIsPlaying(true)
+    }, 300)
+
+    return () => clearTimeout(startTimer)
+  }, [])
+
+  // High frame rate animation timeline
+  useEffect(() => {
+    if (!isPlaying) return
+
+    const startTime = Date.now()
+    const totalDuration = 4000 // 4 seconds total
+
+    const animationFrame = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / totalDuration, 1)
+      setAnimationProgress(progress)
+
+      if (progress < 1) {
+        requestAnimationFrame(animationFrame)
+      } else {
+        setIsComplete(true)
+        // Trigger the completion callback after a brief delay
+        setTimeout(() => {
+          onComplete()
+        }, 500)
+      }
+    }
+
+    const animationId = requestAnimationFrame(animationFrame)
+    return () => cancelAnimationFrame(animationId)
+  }, [isPlaying, onComplete])
+
+  // Generate perfectly symmetrical positions for 6 dots
+  const orbitingDots = Array.from({ length: 6 }, (_, i) => {
+    const angle = i * 60 * (Math.PI / 180) // Perfect 60-degree spacing
+    return { id: i, angle }
+  })
+
+  // Calculate current state based on progress
+  const getRadius = (progress) => {
+    if (progress < 0.15) {
+      return 0 // At center - initial growth
+    } else if (progress < 0.25) {
+      // Expand outward with perfect symmetry
+      const expandProgress = (progress - 0.15) / 0.1
+      return 50 * expandProgress
+    } else if (progress < 0.6) {
+      return 50 // Perfect circular orbit
+    } else if (progress < 0.75) {
+      // Symmetrical spiral inward
+      const spiralProgress = (progress - 0.6) / 0.15
+      return 50 * (1 - spiralProgress * spiralProgress)
+    } else {
+      return 0 // Perfectly centered merge
+    }
+  }
+
+  const getRotation = (progress) => {
+    if (progress < 0.15) {
+      return 0
+    } else if (progress < 0.75) {
+      const orbitProgress = (progress - 0.15) / 0.6
+      // Smooth, symmetrical rotation
+      return orbitProgress * orbitProgress * orbitProgress * 2160 // 6 perfect rotations
+    } else {
+      return 2160
+    }
+  }
+
+  const getCornerPosition = (progress) => {
+    if (progress < 0.75) {
+      return { x: 0, y: 0 }
+    } else {
+      const travelProgress = (progress - 0.75) / 0.25
+      // Smooth easing with perfect diagonal movement
+      const easedProgress = 1 - Math.pow(1 - travelProgress, 3)
+
+      return {
+        x: window.innerWidth * 0.45 * easedProgress,
+        y: -window.innerHeight * 0.35 * easedProgress,
+      }
+    }
+  }
+
+  const getDotSize = (progress) => {
+    if (progress < 0.08) {
+      return 1 + progress * 12.5 * 10
+    } else if (progress < 0.15) {
+      const growthProgress = (progress - 0.08) / 0.07
+      return 11 + growthProgress * 9
+    } else if (progress < 0.25) {
+      // Symmetrical dispersal
+      return 20 * (1 - (progress - 0.15) / 0.1)
+    } else if (progress < 0.6) {
+      return 0 // No center dot during orbit
+    } else if (progress < 0.75) {
+      // Symmetrical merge
+      const mergeProgress = (progress - 0.6) / 0.15
+      return mergeProgress * 35
+    } else {
+      return 48 // Profile picture size
+    }
+  }
+
+  const getOrbitDotSize = (progress) => {
+    if (progress < 0.25) {
+      return 18
+    } else if (progress < 0.6) {
+      const orbitProgress = (progress - 0.25) / 0.35
+      // Symmetrical mouse interaction
+      const centerX = window.innerWidth / 2
+      const centerY = window.innerHeight / 2
+      const mouseDistance = Math.sqrt(Math.pow(mousePosition.x - centerX, 2) + Math.pow(mousePosition.y - centerY, 2))
+      const mouseEffect = Math.max(0, 1 - mouseDistance / 200) * 6 // Reduced for symmetry
+
+      return 18 + orbitProgress * 10 + mouseEffect
+    } else {
+      const mergeProgress = (progress - 0.6) / 0.15
+      return 28 + mergeProgress * 15
+    }
+  }
+
+  // Don't render anything if animation hasn't started
+  if (!isPlaying) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 overflow-hidden">
+        <div className="relative w-96 h-96 flex items-center justify-center"></div>
+      </div>
+    )
+  }
+
+  const cornerPosition = getCornerPosition(animationProgress)
+  const currentRadius = getRadius(animationProgress)
+  const currentRotation = getRotation(animationProgress)
+  const mainDotSize = getDotSize(animationProgress)
+  const orbitDotSize = getOrbitDotSize(animationProgress)
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 overflow-hidden">
+      <div className="relative w-96 h-96 flex items-center justify-center">
+        {/* Perfectly symmetrical animation container */}
+        <motion.div
+          className="absolute"
+          style={{
+            rotate: currentRotation,
+            x: cornerPosition.x,
+            y: cornerPosition.y,
+          }}
+        >
+          {/* Center dot - perfectly centered */}
+          {(animationProgress < 0.25 || animationProgress > 0.6) && mainDotSize > 0 && (
+            <div>
+              {[...Array(7)].map((_, layerIndex) => (
+                <motion.div
+                  key={`main-layer-${layerIndex}`}
+                  className="absolute rounded-full"
+                  style={{
+                    backgroundColor: "#1626ff",
+                    opacity: 0.1 + layerIndex * 0.13,
+                    width: mainDotSize + layerIndex * (mainDotSize * 0.3),
+                    height: mainDotSize + layerIndex * (mainDotSize * 0.3),
+                    left: -(mainDotSize / 2) - layerIndex * (mainDotSize * 0.15),
+                    top: -(mainDotSize / 2) - layerIndex * (mainDotSize * 0.15),
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Perfectly symmetrical orbiting dots */}
+          {animationProgress >= 0.15 &&
+            animationProgress <= 0.75 &&
+            orbitingDots.map((dot, index) => {
+              let dotOpacity = 1
+              if (animationProgress < 0.25) {
+                dotOpacity = (animationProgress - 0.15) / 0.1
+              } else if (animationProgress > 0.65) {
+                dotOpacity = Math.max(0, 1 - (animationProgress - 0.65) / 0.1)
+              }
+
+              // Perfect symmetrical positioning - no wobble
+              const dotAngle = dot.angle
+              const x = Math.cos(dotAngle) * currentRadius
+              const y = Math.sin(dotAngle) * currentRadius
+
+              return (
+                <div key={dot.id} style={{ opacity: dotOpacity }}>
+                  {[...Array(6)].map((_, layerIndex) => (
+                    <motion.div
+                      key={`orbit-layer-${dot.id}-${layerIndex}`}
+                      className="absolute rounded-full"
+                      style={{
+                        backgroundColor: "#1626ff",
+                        opacity: 0.12 + layerIndex * 0.15,
+                        width: orbitDotSize + layerIndex * 6,
+                        height: orbitDotSize + layerIndex * 6,
+                        left: x - orbitDotSize / 2 - layerIndex * 3,
+                        top: y - orbitDotSize / 2 - layerIndex * 3,
+                      }}
+                    />
+                  ))}
+                </div>
+              )
+            })}
+        </motion.div>
+      </div>
+    </div>
+  )
 }
 
 const TypewriterText: React.FC<TypewriterTextProps> = ({ text, delay = 0, onComplete }) => {
@@ -95,9 +327,14 @@ const Header = ({ isVisible }: HeaderProps) => {
 };
 
 export default function Home() {
+  const [showPortfolio, setShowPortfolio] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [showHeader, setShowHeader] = useState(false);
   const [showSections, setShowSections] = useState(false);
+
+  const handleLoadingComplete = () => {
+    setShowPortfolio(true);
+  };
 
   const handleNameComplete = () => {
     setShowDescription(true);
@@ -113,6 +350,11 @@ export default function Home() {
   const handleExploreClick = () => {
     console.log('Navigate to explore page');
   };
+
+  // Show loading animation first
+  if (!showPortfolio) {
+    return <LoadingAnimation onComplete={handleLoadingComplete} />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
